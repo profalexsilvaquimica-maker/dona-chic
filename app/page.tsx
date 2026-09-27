@@ -2287,30 +2287,6 @@ export default function Home() {
 
 
 
-  const newsletterTitulo =
-
-    config.newsletter_titulo ||
-
-    "Entre para o nosso universo.";
-
-
-
-  const newsletterDescricao =
-
-    config.newsletter_descricao ||
-
-    "Novidades, lançamentos e condições especiais para você.";
-
-
-
-  const newsletterBotao =
-
-    config.newsletter_botao ||
-
-    "Quero novidades";
-
-
-
   const rodapeFrase =
 
     config.rodape_frase ||
@@ -2441,11 +2417,7 @@ export default function Home() {
 
               <a
 
-                href={instagramUrl}
-
-                target="_blank"
-
-                rel="noreferrer"
+                href="#instagram"
 
                 className={`${cormorant.className} text-[21px] font-semibold text-[#332722] transition hover:text-[#ad7058]`}
 
@@ -3633,7 +3605,7 @@ export default function Home() {
 
           id="instagram"
 
-          className="scroll-mt-0 flex flex-col justify-center bg-[#f7f3ee] px-4 pb-4 pt-4 sm:px-6 sm:pt-5 lg:h-[430px]"
+          className="scroll-mt-0 flex min-h-screen flex-col justify-center bg-[#f7f3ee] px-4 pb-4 pt-4 sm:px-6 sm:pt-5"
 
         >
 
@@ -3727,7 +3699,7 @@ export default function Home() {
 
 
 
-          <div className="mt-5 grid grid-cols-2 md:grid-cols-4">
+          <div className="mt-5 flex flex-wrap justify-center gap-3">
 
             {instagramImagens.map(
 
@@ -3747,7 +3719,7 @@ export default function Home() {
 
                   rel="noreferrer"
 
-                  className="aspect-square overflow-hidden md:h-[205px] md:aspect-auto"
+                  className="h-[58vh] max-h-[560px] min-h-[360px] aspect-[9/16] overflow-hidden"
 
                   aria-label="Abrir Instagram da Dona Chic"
 
@@ -3772,80 +3744,6 @@ export default function Home() {
               )
 
             )}
-
-          </div>
-
-        </section>
-
-
-
-        <section className="bg-[#e8d2c5] px-6 py-12 sm:px-8 sm:py-14">
-
-          <div className="mx-auto flex max-w-[1450px] flex-col justify-between gap-10 md:flex-row md:items-center">
-
-            <div className="max-w-[520px]">
-
-              <h3
-
-                className={`${playfair.className} text-[34px] leading-tight text-[#17120f] sm:text-[42px]`}
-
-              >
-
-                {
-
-                  newsletterTitulo
-
-                }
-
-              </h3>
-
-
-
-              <p className="mt-3 text-[14px] leading-7 text-[#7d695f] sm:text-[16px]">
-
-                {
-
-                  newsletterDescricao
-
-                }
-
-              </p>
-
-            </div>
-
-
-
-            <div className="flex w-full max-w-[560px] items-center gap-4 border-b border-[#806f66] pb-2">
-
-              <input
-
-                type="email"
-
-                placeholder="Seu melhor e-mail"
-
-                className="flex-1 bg-transparent py-3 text-[15px] text-[#4e413c] outline-none placeholder:text-[#8d7c74]"
-
-              />
-
-
-
-              <button
-
-                type="button"
-
-                className={`${cormorant.className} text-[24px] font-semibold text-[#17120f]`}
-
-              >
-
-                {
-
-                  newsletterBotao
-
-                }
-
-              </button>
-
-            </div>
 
           </div>
 
