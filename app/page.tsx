@@ -290,38 +290,6 @@ function SearchIcon() {
 
 
 
-function UserIcon() {
-
-  return (
-
-    <svg
-
-      width="17"
-
-      height="17"
-
-      viewBox="0 0 24 24"
-
-      fill="none"
-
-      stroke="currentColor"
-
-      strokeWidth="1.5"
-
-    >
-
-      <circle cx="12" cy="8" r="4" />
-
-      <path d="M4 21c1.4-4 4.1-6 8-6s6.6 2 8 6" />
-
-    </svg>
-
-  );
-
-}
-
-
-
 function HeartIcon() {
 
   return (
@@ -2537,19 +2505,6 @@ export default function Home() {
 
 
 
-              <a
-
-                href="/admin"
-
-                aria-label="Minha conta"
-
-              >
-
-                <UserIcon />
-
-              </a>
-
-
 
               <button
 
@@ -3960,19 +3915,6 @@ export default function Home() {
 
                 </p>
 
-
-
-                <a
-
-                  href="/admin"
-
-                  className="block"
-
-                >
-
-                  Minha conta
-
-                </a>
 
               </div>
 

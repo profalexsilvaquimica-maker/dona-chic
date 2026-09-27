@@ -2069,21 +2069,32 @@ export default function AdminPage() {
               const ativo = secao === item.id;
 
               return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() =>
-                    setSecao(item.id)
-                  }
-                  className={`flex w-full items-center gap-3 rounded-sm px-4 py-3 text-left text-[12px] transition ${
-                    ativo
-                      ? "bg-[#b97a61] text-white"
-                      : "text-white/70 hover:bg-white/5 hover:text-white"
-                  }`}
-                >
-                  {item.icon}
-                  {item.nome}
-                </button>
+                <div key={item.id}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSecao(item.id)
+                    }
+                    className={`flex w-full items-center gap-3 rounded-sm px-4 py-3 text-left text-[12px] transition ${
+                      ativo
+                        ? "bg-[#b97a61] text-white"
+                        : "text-white/70 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    {item.icon}
+                    {item.nome}
+                  </button>
+
+                  {item.id === "produtos" && (
+                    <a
+                      href="/admin/estoque"
+                      className="mt-1 flex w-full items-center gap-3 rounded-sm px-4 py-3 text-left text-[12px] text-white/70 transition hover:bg-white/5 hover:text-white"
+                    >
+                      <BoxIcon />
+                      Estoque
+                    </a>
+                  )}
+                </div>
               );
             })}
           </nav>
@@ -2139,20 +2150,33 @@ export default function AdminPage() {
 
         <div className="flex overflow-x-auto border-b border-[#ddd6d1] bg-white px-3 lg:hidden">
           {menu.map((item) => (
-            <button
+            <div
               key={item.id}
-              type="button"
-              onClick={() =>
-                setSecao(item.id)
-              }
-              className={`whitespace-nowrap border-b-2 px-4 py-4 text-[11px] ${
-                secao === item.id
-                  ? "border-[#b97a61] text-[#9a604a]"
-                  : "border-transparent text-[#736963]"
-              }`}
+              className="flex"
             >
-              {item.nome}
-            </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setSecao(item.id)
+                }
+                className={`whitespace-nowrap border-b-2 px-4 py-4 text-[11px] ${
+                  secao === item.id
+                    ? "border-[#b97a61] text-[#9a604a]"
+                    : "border-transparent text-[#736963]"
+                }`}
+              >
+                {item.nome}
+              </button>
+
+              {item.id === "produtos" && (
+                <a
+                  href="/admin/estoque"
+                  className="whitespace-nowrap border-b-2 border-transparent px-4 py-4 text-[11px] text-[#736963]"
+                >
+                  Estoque
+                </a>
+              )}
+            </div>
           ))}
         </div>
 
