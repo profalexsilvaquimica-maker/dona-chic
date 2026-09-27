@@ -107,6 +107,23 @@ function formatarPreco(valor: number) {
   });
 }
 
+function formatarCampoMoeda(valor: number) {
+  return Number(valor || 0).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function converterCampoMoeda(texto: string) {
+  const somenteNumeros = texto.replace(/\D/g, "");
+
+  if (!somenteNumeros) {
+    return 0;
+  }
+
+  return Number(somenteNumeros) / 100;
+}
+
 function gerarSlug(texto: string) {
   return texto
     .normalize("NFD")
@@ -2663,15 +2680,14 @@ export default function AdminPage() {
                       </span>
 
                       <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={produto.preco_normal}
+                        type="text"
+                        inputMode="numeric"
+                        value={formatarCampoMoeda(produto.preco_normal)}
                         onChange={(event) =>
                           atualizarPrecoProduto(
                             produto,
                             "preco_normal",
-                            Number(event.target.value)
+                            converterCampoMoeda(event.target.value)
                           )
                         }
                         className="w-full border border-[#ddd5d0] px-3 py-2.5 text-[12px]"
@@ -2684,15 +2700,14 @@ export default function AdminPage() {
                       </span>
 
                       <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={produto.preco_chic}
+                        type="text"
+                        inputMode="numeric"
+                        value={formatarCampoMoeda(produto.preco_chic)}
                         onChange={(event) =>
                           atualizarPrecoProduto(
                             produto,
                             "preco_chic",
-                            Number(event.target.value)
+                            converterCampoMoeda(event.target.value)
                           )
                         }
                         className="w-full border border-[#d8aa96] bg-[#fbf3ef] px-3 py-2.5 text-[12px] font-semibold text-[#915940]"
@@ -4020,14 +4035,13 @@ export default function AdminPage() {
                     </span>
 
                     <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={produtoFormulario.preco_normal}
+                      type="text"
+                      inputMode="numeric"
+                      value={formatarCampoMoeda(produtoFormulario.preco_normal)}
                       onChange={(event) =>
                         setProdutoFormulario({
                           ...produtoFormulario,
-                          preco_normal: Number(event.target.value),
+                          preco_normal: converterCampoMoeda(event.target.value),
                         })
                       }
                       className="w-full border border-[#dcd4cf] px-4 py-3 text-[12px]"
@@ -4040,14 +4054,13 @@ export default function AdminPage() {
                     </span>
 
                     <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={produtoFormulario.preco_chic}
+                      type="text"
+                      inputMode="numeric"
+                      value={formatarCampoMoeda(produtoFormulario.preco_chic)}
                       onChange={(event) =>
                         setProdutoFormulario({
                           ...produtoFormulario,
-                          preco_chic: Number(event.target.value),
+                          preco_chic: converterCampoMoeda(event.target.value),
                         })
                       }
                       className="w-full border border-[#d9a38c] bg-[#fff8f5] px-4 py-3 text-[12px] font-semibold text-[#995b43]"
