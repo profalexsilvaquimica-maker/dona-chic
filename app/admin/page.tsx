@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, DragEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
 
 type Secao =
@@ -23,6 +23,9 @@ type Produto = {
   ativo: boolean;
   novidade: boolean;
   imagem: string | null;
+  imagem_2: string | null;
+  imagem_3: string | null;
+  riscar_preco_normal: boolean;
   tamanhos: string[];
   cores: string[];
   ordem: number;
@@ -70,6 +73,9 @@ type ProdutoFormulario = {
   ativo: boolean;
   novidade: boolean;
   imagem: string;
+  imagem_2: string;
+  imagem_3: string;
+  riscar_preco_normal: boolean;
   tamanhos: string;
   cores: string;
   ordem: number;
@@ -86,6 +92,9 @@ const produtoVazio: ProdutoFormulario = {
   ativo: true,
   novidade: false,
   imagem: "",
+  imagem_2: "",
+  imagem_3: "",
+  riscar_preco_normal: false,
   tamanhos: "P, M, G, GG",
   cores: "",
   ordem: 0,
@@ -485,6 +494,15 @@ export default function AdminPage() {
           ordem: Number(
             produto.ordem ?? 0
           ),
+
+          imagem_2:
+            produto.imagem_2 ?? null,
+
+          imagem_3:
+            produto.imagem_3 ?? null,
+
+          riscar_preco_normal:
+            Boolean(produto.riscar_preco_normal ?? false),
 
           tamanhos:
             produto.tamanhos ?? [],
@@ -922,13 +940,22 @@ export default function AdminPage() {
     return true;
   }
 
-  async function selecionarImagemProduto(
-    event: ChangeEvent<HTMLInputElement>
+  type ImagemProdutoCampo =
+    | "imagem"
+    | "imagem_2"
+    | "imagem_3";
+
+  function permitirArraste(
+    event: DragEvent<HTMLElement>
   ) {
-    const file = event.target.files?.[0];
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  }
 
-    if (!file) return;
-
+  async function enviarImagemProdutoArquivo(
+    file: File,
+    campo: ImagemProdutoCampo
+  ) {
     setEnviandoImagemProduto(true);
 
     const url = await enviarImagemStorage(
@@ -939,14 +966,54 @@ export default function AdminPage() {
     if (url) {
       setProdutoFormulario((atual) => ({
         ...atual,
-        imagem: url,
+        [campo]: url,
       }));
 
-      mostrarMensagem("Imagem do produto enviada.");
+      const numero =
+        campo === "imagem"
+          ? 1
+          : campo === "imagem_2"
+            ? 2
+            : 3;
+
+      mostrarMensagem(
+        `Foto ${numero} do produto enviada.`
+      );
     }
 
-    event.target.value = "";
     setEnviandoImagemProduto(false);
+  }
+
+  async function selecionarImagemProduto(
+    event: ChangeEvent<HTMLInputElement>,
+    campo: ImagemProdutoCampo
+  ) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    await enviarImagemProdutoArquivo(
+      file,
+      campo
+    );
+
+    event.target.value = "";
+  }
+
+  async function soltarImagemProduto(
+    event: DragEvent<HTMLDivElement>,
+    campo: ImagemProdutoCampo
+  ) {
+    event.preventDefault();
+
+    const file = event.dataTransfer.files?.[0];
+
+    if (!file || enviandoImagemProduto) return;
+
+    await enviarImagemProdutoArquivo(
+      file,
+      campo
+    );
   }
 
   async function selecionarImagemCategoria(
@@ -994,13 +1061,7 @@ export default function AdminPage() {
     setEnviandoCategoriaId(null);
   }
 
-  async function selecionarHero(
-    event: ChangeEvent<HTMLInputElement>
-  ) {
-    const file = event.target.files?.[0];
-
-    if (!file) return;
-
+  async function enviarHeroArquivo(file: File) {
     setEnviandoHero(true);
 
     const url = await enviarImagemStorage(
@@ -1023,18 +1084,36 @@ export default function AdminPage() {
       }
     }
 
-    event.target.value = "";
     setEnviandoHero(false);
   }
 
-  async function selecionarBanner(
-    event: ChangeEvent<HTMLInputElement>,
-    indice: number
+  async function selecionarHero(
+    event: ChangeEvent<HTMLInputElement>
   ) {
     const file = event.target.files?.[0];
 
     if (!file) return;
 
+    await enviarHeroArquivo(file);
+    event.target.value = "";
+  }
+
+  async function soltarHero(
+    event: DragEvent<HTMLDivElement>
+  ) {
+    event.preventDefault();
+
+    const file = event.dataTransfer.files?.[0];
+
+    if (!file || enviandoHero) return;
+
+    await enviarHeroArquivo(file);
+  }
+
+  async function enviarBannerArquivo(
+    file: File,
+    indice: number
+  ) {
     setEnviandoBannerIndice(indice);
 
     const url = await enviarImagemStorage(
@@ -1068,11 +1147,10 @@ export default function AdminPage() {
       }
     }
 
-    event.target.value = "";
     setEnviandoBannerIndice(null);
   }
 
-  async function selecionarImagemInstagram(
+  async function selecionarBanner(
     event: ChangeEvent<HTMLInputElement>,
     indice: number
   ) {
@@ -1080,6 +1158,39 @@ export default function AdminPage() {
 
     if (!file) return;
 
+    await enviarBannerArquivo(
+      file,
+      indice
+    );
+
+    event.target.value = "";
+  }
+
+  async function soltarBanner(
+    event: DragEvent<HTMLDivElement>,
+    indice: number
+  ) {
+    event.preventDefault();
+
+    const file = event.dataTransfer.files?.[0];
+
+    if (
+      !file ||
+      enviandoBannerIndice !== null
+    ) {
+      return;
+    }
+
+    await enviarBannerArquivo(
+      file,
+      indice
+    );
+  }
+
+  async function enviarInstagramArquivo(
+    file: File,
+    indice: number
+  ) {
     setEnviandoInstagramIndice(indice);
 
     const url = await enviarImagemStorage(
@@ -1113,8 +1224,44 @@ export default function AdminPage() {
       }
     }
 
-    event.target.value = "";
     setEnviandoInstagramIndice(null);
+  }
+
+  async function selecionarImagemInstagram(
+    event: ChangeEvent<HTMLInputElement>,
+    indice: number
+  ) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    await enviarInstagramArquivo(
+      file,
+      indice
+    );
+
+    event.target.value = "";
+  }
+
+  async function soltarImagemInstagram(
+    event: DragEvent<HTMLDivElement>,
+    indice: number
+  ) {
+    event.preventDefault();
+
+    const file = event.dataTransfer.files?.[0];
+
+    if (
+      !file ||
+      enviandoInstagramIndice !== null
+    ) {
+      return;
+    }
+
+    await enviarInstagramArquivo(
+      file,
+      indice
+    );
   }
 
   async function removerImagemConfiguracao(
@@ -1172,6 +1319,12 @@ export default function AdminPage() {
         produto.novidade,
       imagem:
         produto.imagem ?? "",
+      imagem_2:
+        produto.imagem_2 ?? "",
+      imagem_3:
+        produto.imagem_3 ?? "",
+      riscar_preco_normal:
+        Boolean(produto.riscar_preco_normal ?? false),
       tamanhos:
         produto.tamanhos.join(", "),
       cores:
@@ -1246,6 +1399,17 @@ export default function AdminPage() {
       imagem:
         produtoFormulario.imagem.trim() ||
         null,
+
+      imagem_2:
+        produtoFormulario.imagem_2.trim() ||
+        null,
+
+      imagem_3:
+        produtoFormulario.imagem_3.trim() ||
+        null,
+
+      riscar_preco_normal:
+        produtoFormulario.riscar_preco_normal,
 
       tamanhos:
         produtoFormulario.tamanhos
@@ -2992,7 +3156,11 @@ export default function AdminPage() {
                     </span>
 
                     <div className="grid gap-4 md:grid-cols-[260px_1fr]">
-                      <div className="aspect-[16/9] overflow-hidden bg-[#eeeae7]">
+                      <div
+                        onDragOver={permitirArraste}
+                        onDrop={soltarHero}
+                        className="relative aspect-[16/9] overflow-hidden border-2 border-dashed border-[#d6ccc6] bg-[#eeeae7]"
+                      >
                         {heroImagem ? (
                           <img
                             src={heroImagem}
@@ -3000,8 +3168,9 @@ export default function AdminPage() {
                             className="h-full w-full object-cover"
                           />
                         ) : (
-                          <div className="flex h-full items-center justify-center text-[10px] text-[#998c85]">
-                            Sem imagem
+                          <div className="flex h-full flex-col items-center justify-center px-5 text-center text-[10px] leading-5 text-[#998c85]">
+                            <span>Sem imagem</span>
+                            <span>Arraste uma foto aqui</span>
                           </div>
                         )}
                       </div>
@@ -3039,8 +3208,7 @@ export default function AdminPage() {
                         )}
 
                         <p className="text-[10px] leading-5 text-[#8d817a]">
-                          A imagem é enviada para o Supabase Storage e salva
-                          automaticamente.
+                          Clique para selecionar ou arraste a foto para a área ao lado. A imagem é enviada para o Supabase Storage e salva automaticamente.
                         </p>
                       </div>
                     </div>
@@ -3099,7 +3267,13 @@ export default function AdminPage() {
                         Banner {indice + 1}
                       </p>
 
-                      <div className="aspect-[16/10] overflow-hidden bg-[#ece8e5]">
+                      <div
+                        onDragOver={permitirArraste}
+                        onDrop={(event) =>
+                          soltarBanner(event, indice)
+                        }
+                        className="relative aspect-[16/10] overflow-hidden border-2 border-dashed border-[#d9d0ca] bg-[#ece8e5]"
+                      >
                         {imagem ? (
                           <img
                             src={imagem}
@@ -3107,8 +3281,9 @@ export default function AdminPage() {
                             className="h-full w-full object-cover"
                           />
                         ) : (
-                          <div className="flex h-full items-center justify-center px-3 text-center text-[9px] text-[#998c85]">
-                            Nenhuma imagem
+                          <div className="flex h-full flex-col items-center justify-center px-3 text-center text-[9px] leading-4 text-[#998c85]">
+                            <span>Nenhuma imagem</span>
+                            <span>Arraste aqui</span>
                           </div>
                         )}
                       </div>
@@ -3347,7 +3522,13 @@ export default function AdminPage() {
                         key={`instagram-${indice + 1}`}
                         className="border border-[#e0d9d4] bg-[#fbfaf8] p-3"
                       >
-                        <div className="aspect-square overflow-hidden bg-[#ece8e5]">
+                        <div
+                          onDragOver={permitirArraste}
+                          onDrop={(event) =>
+                            soltarImagemInstagram(event, indice)
+                          }
+                          className="relative aspect-square overflow-hidden border-2 border-dashed border-[#d9d0ca] bg-[#ece8e5]"
+                        >
                           {imagem ? (
                             <img
                               src={imagem}
@@ -3355,8 +3536,9 @@ export default function AdminPage() {
                               className="h-full w-full object-cover"
                             />
                           ) : (
-                            <div className="flex h-full items-center justify-center text-[9px] text-[#998c85]">
-                              Sem imagem
+                            <div className="flex h-full flex-col items-center justify-center px-3 text-center text-[9px] leading-4 text-[#998c85]">
+                              <span>Sem imagem</span>
+                              <span>Arraste aqui</span>
                             </div>
                           )}
                         </div>
@@ -3678,65 +3860,127 @@ export default function AdminPage() {
               </section>
 
               <section className="border border-[#ded7d2] bg-white p-5">
-                <h3 className="font-serif text-[22px]">
-                  Imagem
-                </h3>
+                <div>
+                  <h3 className="font-serif text-[22px]">
+                    Fotos do produto
+                  </h3>
 
-                <div className="mt-5 grid gap-5 md:grid-cols-[180px_1fr]">
-                  <div className="aspect-[3/4] overflow-hidden bg-[#eeeae7]">
-                    {produtoFormulario.imagem ? (
-                      <img
-                        src={produtoFormulario.imagem}
-                        alt="Produto"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-[10px] text-[#9c9089]">
-                        Sem imagem
-                      </div>
-                    )}
-                  </div>
+                  <p className="mt-2 text-[10px] leading-5 text-[#8d817a]">
+                    A Foto 1 é a capa principal. Você pode clicar para selecionar ou arrastar uma imagem para qualquer espaço. JPG, PNG ou WEBP, até 10 MB.
+                  </p>
+                </div>
 
-                  <div className="flex flex-col justify-center">
-                    <span className="mb-2 block text-[9px] uppercase tracking-[0.12em] text-[#81756f]">
-                      Imagem do produto
-                    </span>
+                <div className="mt-5 grid gap-5 md:grid-cols-3">
+                  {([
+                    {
+                      campo: "imagem" as ImagemProdutoCampo,
+                      titulo: "Foto 1",
+                      subtitulo: "Principal",
+                    },
+                    {
+                      campo: "imagem_2" as ImagemProdutoCampo,
+                      titulo: "Foto 2",
+                      subtitulo: "Complementar",
+                    },
+                    {
+                      campo: "imagem_3" as ImagemProdutoCampo,
+                      titulo: "Foto 3",
+                      subtitulo: "Complementar",
+                    },
+                  ]).map(({ campo, titulo, subtitulo }) => {
+                    const imagem = produtoFormulario[campo];
 
-                    <label className="flex cursor-pointer items-center justify-center bg-black px-5 py-3 text-[9px] font-semibold uppercase tracking-[0.13em] text-white">
-                      {enviandoImagemProduto
-                        ? "Enviando..."
-                        : produtoFormulario.imagem
-                          ? "Trocar imagem"
-                          : "Selecionar imagem do computador"}
-
-                      <input
-                        type="file"
-                        accept="image/*"
-                        disabled={enviandoImagemProduto}
-                        onChange={selecionarImagemProduto}
-                        className="hidden"
-                      />
-                    </label>
-
-                    {produtoFormulario.imagem && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setProdutoFormulario((atual) => ({
-                            ...atual,
-                            imagem: "",
-                          }))
-                        }
-                        className="mt-3 border border-[#e1c8bf] px-5 py-3 text-[9px] font-semibold uppercase tracking-[0.13em] text-[#a65343]"
+                    return (
+                      <div
+                        key={campo}
+                        className="border border-[#e0d9d4] bg-[#fbfaf8] p-3"
                       >
-                        Remover imagem do produto
-                      </button>
-                    )}
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6f625c]">
+                              {titulo}
+                            </p>
 
-                    <p className="mt-3 text-[10px] leading-5 text-[#8d817a]">
-                      JPG, PNG, WEBP ou outro formato de imagem. Limite de 10 MB.
-                    </p>
-                  </div>
+                            <p className="mt-1 text-[9px] text-[#9a8d86]">
+                              {subtitulo}
+                            </p>
+                          </div>
+
+                          {campo === "imagem" && (
+                            <span className="bg-[#f0ddd3] px-2 py-1 text-[8px] font-semibold uppercase tracking-[0.08em] text-[#9a5c45]">
+                              Capa
+                            </span>
+                          )}
+                        </div>
+
+                        <div
+                          onDragOver={permitirArraste}
+                          onDrop={(event) =>
+                            soltarImagemProduto(
+                              event,
+                              campo
+                            )
+                          }
+                          className="relative aspect-[3/4] overflow-hidden border-2 border-dashed border-[#d8cec8] bg-[#eeeae7]"
+                        >
+                          {imagem ? (
+                            <img
+                              src={imagem}
+                              alt={`${titulo} do produto`}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full flex-col items-center justify-center px-4 text-center text-[10px] leading-5 text-[#9c9089]">
+                              <span>Sem imagem</span>
+                              <span className="mt-1 font-semibold text-[#7b6f69]">
+                                Arraste a foto aqui
+                              </span>
+                            </div>
+                          )}
+
+                          {enviandoImagemProduto && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/55 text-[9px] font-semibold uppercase tracking-[0.14em] text-white">
+                              Enviando...
+                            </div>
+                          )}
+                        </div>
+
+                        <label className="mt-3 flex cursor-pointer items-center justify-center bg-black px-3 py-3 text-center text-[8px] font-semibold uppercase tracking-[0.1em] text-white">
+                          {imagem
+                            ? "Trocar foto"
+                            : "Selecionar foto"}
+
+                          <input
+                            type="file"
+                            accept="image/*"
+                            disabled={enviandoImagemProduto}
+                            onChange={(event) =>
+                              selecionarImagemProduto(
+                                event,
+                                campo
+                              )
+                            }
+                            className="hidden"
+                          />
+                        </label>
+
+                        {imagem && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setProdutoFormulario((atual) => ({
+                                ...atual,
+                                [campo]: "",
+                              }))
+                            }
+                            className="mt-2 w-full border border-[#e1c8bf] px-3 py-2.5 text-[8px] font-semibold uppercase tracking-[0.1em] text-[#a65343]"
+                          >
+                            Remover foto
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
 
@@ -3786,6 +4030,30 @@ export default function AdminPage() {
                     />
                   </label>
                 </div>
+
+                <label className="mt-5 flex cursor-pointer items-center justify-between gap-5 border border-[#ead8cf] bg-[#fff9f6] p-4">
+                  <div>
+                    <p className="text-[12px] font-semibold text-[#4b3c35]">
+                      Riscar o preço normal
+                    </p>
+
+                    <p className="mt-1 text-[10px] leading-5 text-[#8b7770]">
+                      Ative para mostrar o preço normal riscado e destacar o preço Chic+ na loja.
+                    </p>
+                  </div>
+
+                  <input
+                    type="checkbox"
+                    checked={produtoFormulario.riscar_preco_normal}
+                    onChange={(event) =>
+                      setProdutoFormulario({
+                        ...produtoFormulario,
+                        riscar_preco_normal: event.target.checked,
+                      })
+                    }
+                    className="h-5 w-5 accent-black"
+                  />
+                </label>
               </section>
 
               <section className="border border-[#ded7d2] bg-white p-5">
