@@ -22,8 +22,6 @@ import {
 
   removerDoCarrinho,
 
-  subtotalCarrinho,
-
 } from "@/lib/carrinho";
 
 
@@ -480,13 +478,117 @@ export default function SacolaPage() {
 
 
 
-  const subtotal = useMemo(
+  const chicAtivo =
 
-    () => subtotalCarrinho(itens),
+    quantidadeTotal >= 4;
+
+
+
+  const subtotalNormal = useMemo(
+
+    () =>
+
+      itens.reduce(
+
+        (total, item) =>
+
+          total +
+
+          Number(
+
+            item.preco_normal || 0
+
+          ) *
+
+            item.quantidade,
+
+        0
+
+      ),
 
     [itens]
 
   );
+
+
+
+  const subtotal = useMemo(
+
+    () =>
+
+      itens.reduce(
+
+        (total, item) => {
+
+          const precoNormal =
+
+            Number(
+
+              item.preco_normal || 0
+
+            );
+
+
+
+          const precoChic =
+
+            Number(
+
+              item.preco_chic || 0
+
+            );
+
+
+
+          const precoAplicado =
+
+            chicAtivo &&
+
+            precoChic > 0
+
+              ? precoChic
+
+              : precoNormal;
+
+
+
+          return (
+
+            total +
+
+            precoAplicado *
+
+              item.quantidade
+
+          );
+
+        },
+
+        0
+
+      ),
+
+    [itens, chicAtivo]
+
+  );
+
+
+
+  const economiaChic =
+
+    chicAtivo
+
+      ? Math.max(
+
+          0,
+
+          subtotalNormal -
+
+            subtotal
+
+        )
+
+      : 0;
 
 
 
@@ -637,6 +739,166 @@ export default function SacolaPage() {
     setItens(
 
       limparCarrinho()
+
+    );
+
+  }
+
+
+
+  function finalizarCompraWhatsApp() {
+
+    const linhasProdutos = itens.map(
+
+      (item, index) => {
+
+        const precoNormal = Number(
+
+          item.preco_normal || 0
+
+        );
+
+
+
+        const precoChic = Number(
+
+          item.preco_chic || 0
+
+        );
+
+
+
+        const precoUnitario =
+
+          chicAtivo &&
+
+          precoChic > 0
+
+            ? precoChic
+
+            : precoNormal;
+
+
+
+        const detalhes = [
+
+          item.tamanho
+
+            ? `Tamanho: ${item.tamanho}`
+
+            : "",
+
+          item.cor
+
+            ? `Cor: ${item.cor}`
+
+            : "",
+
+        ]
+
+          .filter(Boolean)
+
+          .join(" | ");
+
+
+
+        return [
+
+          `${index + 1}. ${item.nome}`,
+
+          detalhes,
+
+          `Quantidade: ${item.quantidade}`,
+
+          `Valor unitário: ${formatarMoeda(
+
+            precoUnitario
+
+          )}`,
+
+          `Subtotal: ${formatarMoeda(
+
+            precoUnitario *
+
+              item.quantidade
+
+          )}`,
+
+        ]
+
+          .filter(Boolean)
+
+          .join("\n");
+
+      }
+
+    );
+
+
+
+    const mensagemWhatsApp = [
+
+      "Olá, Dona Chic! Gostaria de finalizar esta compra:",
+
+      "",
+
+      ...linhasProdutos.flatMap(
+
+        (linha) => [linha, ""]
+
+      ),
+
+      `Total de peças: ${quantidadeTotal}`,
+
+      chicAtivo
+
+        ? "Preço Chic+ aplicado."
+
+        : "Preço normal aplicado.",
+
+      economiaChic > 0
+
+        ? `Economia Chic+: ${formatarMoeda(
+
+            economiaChic
+
+          )}`
+
+        : "",
+
+      `Total da compra: ${formatarMoeda(
+
+        subtotal
+
+      )}`,
+
+      "",
+
+      "Frete não incluído.",
+
+    ]
+
+      .filter(Boolean)
+
+      .join("\n");
+
+
+
+    const url = `https://wa.me/5591980660825?text=${encodeURIComponent(
+
+      mensagemWhatsApp
+
+    )}`;
+
+
+
+    window.open(
+
+      url,
+
+      "_blank",
+
+      "noopener,noreferrer"
 
     );
 
@@ -832,7 +1094,7 @@ export default function SacolaPage() {
 
 
 
-                  const totalItem =
+                  const precoNormalItem =
 
                     Number(
 
@@ -840,7 +1102,37 @@ export default function SacolaPage() {
 
                         0
 
-                    ) *
+                    );
+
+
+
+                  const precoChicItem =
+
+                    Number(
+
+                      item.preco_chic ||
+
+                        0
+
+                    );
+
+
+
+                  const precoUnitarioItem =
+
+                    chicAtivo &&
+
+                    precoChicItem > 0
+
+                      ? precoChicItem
+
+                      : precoNormalItem;
+
+
+
+                  const totalItem =
+
+                    precoUnitarioItem *
 
                     item.quantidade;
 
@@ -1143,25 +1435,47 @@ export default function SacolaPage() {
 
                               <p className="text-xs text-[#93857d]">
 
-                                {item.quantidade >
+                                {chicAtivo &&
 
-                                1
+                                precoChicItem > 0
+
+                                  ? "Preço Chic+ aplicado"
+
+                                  : item.quantidade >
+
+                                    1
 
                                   ? `${item.quantidade} × ${formatarMoeda(
 
-                                      Number(
-
-                                        item.preco_normal ||
-
-                                          0
-
-                                      )
+                                      precoUnitarioItem
 
                                     )}`
 
                                   : "Preço"}
 
                               </p>
+
+
+
+                              {chicAtivo &&
+
+                                precoChicItem >
+
+                                  0 && (
+
+                                  <p className="mt-1 text-[11px] text-[#9b8f88] line-through">
+
+                                    {formatarMoeda(
+
+                                      precoNormalItem *
+
+                                        item.quantidade
+
+                                    )}
+
+                                  </p>
+
+                                )}
 
 
 
@@ -1174,6 +1488,32 @@ export default function SacolaPage() {
                                 )}
 
                               </p>
+
+
+
+                              {chicAtivo &&
+
+                                precoChicItem >
+
+                                  0 &&
+
+                                item.quantidade >
+
+                                  1 && (
+
+                                  <p className="mt-1 text-[10px] text-[#a06a55]">
+
+                                    {item.quantidade} ×{" "}
+
+                                    {formatarMoeda(
+
+                                      precoUnitarioItem
+
+                                    )}
+
+                                  </p>
+
+                                )}
 
                             </div>
 
@@ -1277,6 +1617,40 @@ export default function SacolaPage() {
 
 
 
+                  {chicAtivo &&
+
+                    economiaChic >
+
+                      0 && (
+
+                      <div className="flex items-center justify-between gap-4 text-sm">
+
+                        <span className="font-medium text-[#a06a55]">
+
+                          Economia Chic+
+
+                        </span>
+
+
+
+                        <span className="font-semibold text-[#a06a55]">
+
+                          -{" "}
+
+                          {formatarMoeda(
+
+                            economiaChic
+
+                          )}
+
+                        </span>
+
+                      </div>
+
+                    )}
+
+
+
                   <div className="flex items-center justify-between gap-4 text-sm">
 
                     <span className="text-[#716761]">
@@ -1343,6 +1717,12 @@ export default function SacolaPage() {
 
                   type="button"
 
+                  onClick={
+
+                    finalizarCompraWhatsApp
+
+                  }
+
                   className="mt-7 flex min-h-13 w-full items-center justify-center rounded-full bg-black px-6 py-4 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-[#302b28]"
 
                 >
@@ -1355,7 +1735,7 @@ export default function SacolaPage() {
 
                 <p className="mt-4 text-center text-xs leading-5 text-[#968b85]">
 
-                  O pagamento e a finalização da compra serão configurados posteriormente.
+                  Ao finalizar, sua sacola será enviada para o WhatsApp da Dona Chic.
 
                 </p>
 
@@ -1373,7 +1753,31 @@ export default function SacolaPage() {
 
                   <p className="mt-2 text-xs leading-5 text-[#766a64]">
 
-                    A condição especial Chic+ para compras a partir de 4 peças será ativada na próxima etapa.
+                    {chicAtivo
+
+                      ? economiaChic > 0
+
+                        ? `Preço Chic+ aplicado nas ${quantidadeTotal} peças. Você está economizando ${formatarMoeda(
+
+                            economiaChic
+
+                          )}.`
+
+                        : `Condição Chic+ ativada para ${quantidadeTotal} peças.`
+
+                      : `Adicione mais ${4 - quantidadeTotal} ${
+
+                          4 -
+
+                            quantidadeTotal ===
+
+                          1
+
+                            ? "peça"
+
+                            : "peças"
+
+                        } para ativar o Preço Chic+ em toda a sacola.`}
 
                   </p>
 
