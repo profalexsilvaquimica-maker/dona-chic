@@ -347,6 +347,7 @@ export default function AdminPage() {
   const [menuEstilo, setMenuEstilo] = useState("Encontre seu estilo");
   const [menuPromocao, setMenuPromocao] = useState("Compre +4 Peças");
   const [menuInstagram, setMenuInstagram] = useState("Instagram");
+  const [chicQuantidadeMinima, setChicQuantidadeMinima] = useState(4);
   const [instagramUrl, setInstagramUrl] = useState("");
   const [menuExtras, setMenuExtras] = useState<MenuExtra[]>([]);
 
@@ -624,6 +625,17 @@ export default function AdminPage() {
     setMenuPromocao(
       valor("menu_promocao") ||
         "Compre +4 Peças"
+    );
+
+    const quantidadeChicSalva = Number(
+      valor("chic_quantidade_minima") || "4"
+    );
+
+    setChicQuantidadeMinima(
+      Number.isFinite(quantidadeChicSalva) &&
+      quantidadeChicSalva >= 1
+        ? Math.floor(quantidadeChicSalva)
+        : 4
     );
 
     setMenuInstagram(
@@ -1549,6 +1561,43 @@ export default function AdminPage() {
             }
           : item
       )
+    );
+  }
+
+  async function salvarQuantidadeMinimaChic() {
+    const quantidade = Math.max(
+      1,
+      Math.floor(
+        Number(chicQuantidadeMinima || 1)
+      )
+    );
+
+    const { error } = await supabase
+      .from("configuracoes")
+      .upsert(
+        {
+          chave: "chic_quantidade_minima",
+          valor: String(quantidade),
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "chave",
+        }
+      );
+
+    if (error) {
+      mostrarMensagem(
+        `Erro ao salvar condição Chic+: ${error.message}`
+      );
+      return;
+    }
+
+    setChicQuantidadeMinima(quantidade);
+
+    mostrarMensagem(
+      `Preço Chic+ configurado a partir de ${quantidade} ${
+        quantidade === 1 ? "peça" : "peças"
+      }.`
     );
   }
 
@@ -2634,6 +2683,86 @@ export default function AdminPage() {
             <p className="mt-3 max-w-[650px] text-[12px] leading-6 text-[#887b75]">
               Edite o Preço normal e o Preço Chic+ dos produtos.
             </p>
+
+            <div className="mt-8 border border-[#ddd6d1] bg-white p-6">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#a06149]">
+                Condição do Preço Chic+
+              </p>
+
+              <h2 className="mt-2 font-serif text-[27px]">
+                Quantidade mínima
+              </h2>
+
+              <p className="mt-2 max-w-[620px] text-[11px] leading-5 text-[#81756f]">
+                Defina quantas peças o cliente precisa ter na sacola para ativar o Preço Chic+.
+              </p>
+
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                {[2, 3, 4].map((quantidade) => (
+                  <button
+                    key={quantidade}
+                    type="button"
+                    onClick={() =>
+                      setChicQuantidadeMinima(quantidade)
+                    }
+                    className={`min-w-[74px] border px-5 py-3 text-[11px] font-semibold transition ${
+                      chicQuantidadeMinima === quantidade
+                        ? "border-[#b97a61] bg-[#b97a61] text-white"
+                        : "border-[#d8d0cb] bg-white text-[#665d58] hover:border-[#b97a61]"
+                    }`}
+                  >
+                    {quantidade} peças
+                  </button>
+                ))}
+
+                <label className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase tracking-[0.12em] text-[#81756f]">
+                    Outra:
+                  </span>
+
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={String(chicQuantidadeMinima)}
+                    onChange={(event) => {
+                      const somenteNumeros =
+                        event.target.value.replace(/\D/g, "");
+
+                      setChicQuantidadeMinima(
+                        somenteNumeros
+                          ? Math.max(
+                              1,
+                              Number(somenteNumeros)
+                            )
+                          : 1
+                      );
+                    }}
+                    className="w-20 border border-[#dbd4cf] px-3 py-3 text-center text-[12px]"
+                  />
+                </label>
+              </div>
+
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-[#eee7e2] pt-5">
+                <p className="text-[11px] text-[#756a64]">
+                  Regra atual: Chic+ a partir de{" "}
+                  <strong>
+                    {chicQuantidadeMinima}{" "}
+                    {chicQuantidadeMinima === 1
+                      ? "peça"
+                      : "peças"}
+                  </strong>
+                  .
+                </p>
+
+                <button
+                  type="button"
+                  onClick={salvarQuantidadeMinimaChic}
+                  className="bg-black px-6 py-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[#302b28]"
+                >
+                  Salvar condição Chic+
+                </button>
+              </div>
+            </div>
 
             <div className="mt-8 border border-[#ddd6d1] bg-white">
               <div className="border-b border-[#ebe5e1] p-6">
