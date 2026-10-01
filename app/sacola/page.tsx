@@ -206,6 +206,9 @@ export default function SacolaPage() {
 
   const [mensagem, setMensagem] = useState("");
 
+  const [chicQuantidadeMinima, setChicQuantidadeMinima] =
+    useState(4);
+
 
 
   useEffect(() => {
@@ -288,6 +291,8 @@ export default function SacolaPage() {
 
       resultadoProdutos,
 
+      resultadoConfiguracaoChic,
+
     ] = await Promise.all([
 
       supabase
@@ -307,6 +312,19 @@ export default function SacolaPage() {
         .from("produtos")
 
         .select("id,estoque,imagem,imagem_2,imagem_3"),
+
+      supabase
+
+        .from("configuracoes")
+
+        .select("valor")
+
+        .eq(
+          "chave",
+          "chic_quantidade_minima"
+        )
+
+        .maybeSingle(),
 
     ]);
 
@@ -368,6 +386,21 @@ export default function SacolaPage() {
 
         }))
 
+      );
+
+    }
+
+    if (!resultadoConfiguracaoChic.error) {
+
+      const quantidadeSalva = Number(
+        resultadoConfiguracaoChic.data?.valor ?? 4
+      );
+
+      setChicQuantidadeMinima(
+        Number.isFinite(quantidadeSalva) &&
+        quantidadeSalva >= 1
+          ? Math.floor(quantidadeSalva)
+          : 4
       );
 
     }
@@ -480,7 +513,8 @@ export default function SacolaPage() {
 
   const chicAtivo =
 
-    quantidadeTotal >= 4;
+    quantidadeTotal >=
+    chicQuantidadeMinima;
 
 
 
@@ -852,7 +886,11 @@ export default function SacolaPage() {
 
       chicAtivo
 
-        ? "Preço Chic+ aplicado."
+        ? chicQuantidadeMinima < 4
+          ? `Promoção Chic+ aplicada a partir de ${chicQuantidadeMinima} ${
+              chicQuantidadeMinima === 1 ? "peça" : "peças"
+            }.`
+          : "Preço Chic+ aplicado."
 
         : "Preço normal aplicado.",
 
@@ -1745,7 +1783,9 @@ export default function SacolaPage() {
 
                   <p className="text-xs font-medium uppercase tracking-[0.14em] text-[#85756d]">
 
-                    Chic+
+                    {chicQuantidadeMinima < 4
+                      ? "Promoção Chic+"
+                      : "Chic+"}
 
                   </p>
 
@@ -1765,9 +1805,13 @@ export default function SacolaPage() {
 
                         : `Condição Chic+ ativada para ${quantidadeTotal} peças.`
 
-                      : `Adicione mais ${4 - quantidadeTotal} ${
+                      : `Adicione mais ${Math.max(
+                          0,
+                          chicQuantidadeMinima -
+                            quantidadeTotal
+                        )} ${
 
-                          4 -
+                          chicQuantidadeMinima -
 
                             quantidadeTotal ===
 

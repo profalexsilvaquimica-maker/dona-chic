@@ -499,6 +499,9 @@ export default function ProdutosPage() {
 
     useState(0);
 
+  const [chicQuantidadeMinima, setChicQuantidadeMinima] =
+    useState(4);
+
 
 
   const [produtoAdicionado, setProdutoAdicionado] =
@@ -669,6 +672,8 @@ export default function ProdutosPage() {
 
       resultadoVariacoes,
 
+      resultadoConfiguracaoChic,
+
     ] = await Promise.all([
 
       supabase
@@ -719,6 +724,19 @@ export default function ProdutosPage() {
 
         ),
 
+      supabase
+
+        .from("configuracoes")
+
+        .select("valor")
+
+        .eq(
+          "chave",
+          "chic_quantidade_minima"
+        )
+
+        .maybeSingle(),
+
     ]);
 
 
@@ -767,6 +785,19 @@ export default function ProdutosPage() {
 
       );
 
+    }
+
+    if (!resultadoConfiguracaoChic.error) {
+      const quantidadeSalva = Number(
+        resultadoConfiguracaoChic.data?.valor ?? 4
+      );
+
+      setChicQuantidadeMinima(
+        Number.isFinite(quantidadeSalva) &&
+        quantidadeSalva >= 1
+          ? Math.floor(quantidadeSalva)
+          : 4
+      );
     }
 
 
@@ -1917,6 +1948,15 @@ export default function ProdutosPage() {
 
 
 
+  const textoPrecoChic =
+    chicQuantidadeMinima < 4
+      ? `Promoção · Preço Chic+ a partir de ${chicQuantidadeMinima} ${
+          chicQuantidadeMinima === 1 ? "peça" : "peças"
+        }`
+      : `Preço Chic+ · a partir de ${chicQuantidadeMinima} ${
+          chicQuantidadeMinima === 1 ? "peça" : "peças"
+        }`;
+
   return (
 
     <>
@@ -2598,7 +2638,7 @@ export default function ProdutosPage() {
 
                                   <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-[#a05d45]">
 
-                                    Preço Chic+ · a partir de 4 peças
+                                    {textoPrecoChic}
 
                                   </p>
 
@@ -2862,7 +2902,7 @@ export default function ProdutosPage() {
 
                     <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9f6049]">
 
-                      Preço Chic+ · a partir de 4 peças
+                      {textoPrecoChic}
 
                     </span>
 

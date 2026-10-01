@@ -2169,11 +2169,35 @@ export default function Home() {
 
 
 
+  const chicQuantidadeMinima = (() => {
+    const quantidade = Number(
+      config.chic_quantidade_minima || "4"
+    );
+
+    return Number.isFinite(quantidade) &&
+      quantidade >= 1
+      ? Math.floor(quantidade)
+      : 4;
+  })();
+
+  const textoPrecoChic =
+    chicQuantidadeMinima < 4
+      ? `Promoção · Preço Chic+ a partir de ${chicQuantidadeMinima} ${
+          chicQuantidadeMinima === 1 ? "peça" : "peças"
+        }`
+      : `Preço Chic+ · a partir de ${chicQuantidadeMinima} ${
+          chicQuantidadeMinima === 1 ? "peça" : "peças"
+        }`;
+
   const menuPromocao =
-
-    config.menu_promocao ||
-
-    "Compre +4 Peças";
+    chicQuantidadeMinima < 4
+      ? `Promoção Chic+ · ${chicQuantidadeMinima} ${
+          chicQuantidadeMinima === 1 ? "peça" : "peças"
+        }`
+      : config.menu_promocao ||
+        `Compre +${chicQuantidadeMinima} ${
+          chicQuantidadeMinima === 1 ? "Peça" : "Peças"
+        }`;
 
 
 
@@ -3153,7 +3177,7 @@ export default function Home() {
 
                               <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-[#9f654e]">
 
-                                Preço Chic+ · a partir de 4 peças
+                                {textoPrecoChic}
 
                               </p>
 
@@ -4142,7 +4166,7 @@ export default function Home() {
 
                     <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9f6049]">
 
-                      Preço Chic+ · a partir de 4 peças
+                      {textoPrecoChic}
 
                     </span>
 
