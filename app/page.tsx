@@ -2656,7 +2656,7 @@ export default function Home() {
 
         >
 
-          <div className="mx-auto flex min-h-full w-full flex-col">
+          <div className="mx-auto flex min-h-full w-full flex-col lg:h-full lg:min-h-0">
 
             <div className="shrink-0 lg:flex lg:items-end lg:justify-between">
 
@@ -2712,7 +2712,7 @@ export default function Home() {
 
             ) : (
 
-              <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:min-h-0 lg:flex-1 lg:grid-cols-3">
+              <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:min-h-0 lg:flex-1 lg:grid-cols-3 lg:overflow-y-auto lg:overscroll-contain lg:pr-2">
 
                 {categorias.map(
 

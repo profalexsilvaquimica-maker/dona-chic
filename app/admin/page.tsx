@@ -322,6 +322,17 @@ export default function AdminPage() {
 
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+
+  const [novaCategoriaAberta, setNovaCategoriaAberta] = useState(false);
+  const [novaCategoriaNome, setNovaCategoriaNome] = useState("");
+  const [novaCategoriaDescricao, setNovaCategoriaDescricao] = useState("");
+  const [novaCategoriaOrdem, setNovaCategoriaOrdem] = useState("0");
+  const [novaCategoriaAtiva, setNovaCategoriaAtiva] = useState(true);
+  const [novaCategoriaImagem, setNovaCategoriaImagem] = useState("");
+  const [salvandoNovaCategoria, setSalvandoNovaCategoria] = useState(false);
+  const [enviandoNovaCategoriaImagem, setEnviandoNovaCategoriaImagem] =
+    useState(false);
+
   const [configuracoes, setConfiguracoes] = useState<Configuracao[]>([]);
   const [beneficios, setBeneficios] = useState<Beneficio[]>([]);
 
@@ -1654,6 +1665,120 @@ export default function AdminPage() {
     );
   }
 
+  function limparNovaCategoria() {
+    setNovaCategoriaNome("");
+    setNovaCategoriaDescricao("");
+    setNovaCategoriaOrdem("0");
+    setNovaCategoriaAtiva(true);
+    setNovaCategoriaImagem("");
+  }
+
+  async function selecionarImagemNovaCategoria(
+    event: ChangeEvent<HTMLInputElement>
+  ) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    setEnviandoNovaCategoriaImagem(true);
+
+    const url = await enviarImagemStorage(
+      file,
+      "categorias"
+    );
+
+    if (url) {
+      setNovaCategoriaImagem(url);
+      mostrarMensagem(
+        "Imagem da nova categoria enviada."
+      );
+    }
+
+    setEnviandoNovaCategoriaImagem(false);
+    event.target.value = "";
+  }
+
+  async function criarNovaCategoria() {
+    const nome = novaCategoriaNome.trim();
+    const slug = gerarSlug(nome);
+    const ordem = Number(
+      novaCategoriaOrdem.replace(/\D/g, "") || 0
+    );
+
+    if (!nome) {
+      mostrarMensagem(
+        "Digite o nome da nova categoria."
+      );
+      return;
+    }
+
+    if (!slug) {
+      mostrarMensagem(
+        "O nome informado não gera um endereço válido."
+      );
+      return;
+    }
+
+    const duplicada = categorias.some(
+      (categoria) =>
+        categoria.nome.trim().toLowerCase() ===
+          nome.toLowerCase() ||
+        categoria.slug.trim().toLowerCase() ===
+          slug.toLowerCase()
+    );
+
+    if (duplicada) {
+      mostrarMensagem(
+        "Essa categoria já existe."
+      );
+      return;
+    }
+
+    setSalvandoNovaCategoria(true);
+
+    const { data, error } = await supabase
+      .from("categorias")
+      .insert({
+        nome,
+        slug,
+        descricao:
+          novaCategoriaDescricao.trim() || null,
+        imagem:
+          novaCategoriaImagem || null,
+        ativo:
+          novaCategoriaAtiva,
+        ordem,
+        updated_at:
+          new Date().toISOString(),
+      })
+      .select("*")
+      .single();
+
+    setSalvandoNovaCategoria(false);
+
+    if (error) {
+      mostrarMensagem(
+        `Erro ao criar categoria: ${error.message}`
+      );
+      return;
+    }
+
+    setCategorias((atuais) =>
+      [...atuais, data as Categoria].sort(
+        (a, b) =>
+          Number(a.ordem || 0) -
+          Number(b.ordem || 0)
+      )
+    );
+
+    limparNovaCategoria();
+    setNovaCategoriaAberta(false);
+
+    mostrarMensagem(
+      `${nome} criada com sucesso.`
+    );
+  }
+
   async function salvarCategoria(
     categoria: Categoria
   ) {
@@ -1693,6 +1818,58 @@ export default function AdminPage() {
 
     mostrarMensagem(
       `${categoria.nome} atualizada.`
+    );
+  }
+
+
+  async function excluirCategoria(
+    categoria: Categoria
+  ) {
+    const produtosDaCategoria = produtos.filter(
+      (produto) =>
+        produto.categoria
+          .trim()
+          .toLowerCase() ===
+        categoria.nome
+          .trim()
+          .toLowerCase()
+    );
+
+    const aviso =
+      produtosDaCategoria.length > 0
+        ? `A categoria "${categoria.nome}" possui ${produtosDaCategoria.length} ${
+            produtosDaCategoria.length === 1
+              ? "produto associado"
+              : "produtos associados"
+          }. A categoria será excluída, mas os produtos não serão apagados. Deseja continuar?`
+        : `Deseja realmente excluir a categoria "${categoria.nome}"?`;
+
+    const confirmar = window.confirm(aviso);
+
+    if (!confirmar) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from("categorias")
+      .delete()
+      .eq("id", categoria.id);
+
+    if (error) {
+      mostrarMensagem(
+        `Erro ao excluir categoria: ${error.message}`
+      );
+      return;
+    }
+
+    setCategorias((atuais) =>
+      atuais.filter(
+        (item) => item.id !== categoria.id
+      )
+    );
+
+    mostrarMensagem(
+      `${categoria.nome} excluída com sucesso.`
     );
   }
 
@@ -2869,9 +3046,160 @@ export default function AdminPage() {
               Descubra seu estilo
             </h1>
 
-            <p className="mt-3 max-w-[700px] text-[12px] leading-6 text-[#887b75]">
-              Essas categorias já estão gravadas no Supabase.
-            </p>
+            <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="max-w-[700px] text-[12px] leading-6 text-[#887b75]">
+                Essas categorias já estão gravadas no Supabase.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (novaCategoriaAberta) {
+                    limparNovaCategoria();
+                  }
+
+                  setNovaCategoriaAberta(
+                    (aberta) => !aberta
+                  );
+                }}
+                className="w-fit bg-black px-6 py-3 text-[9px] font-semibold uppercase tracking-[0.14em] text-white"
+              >
+                {novaCategoriaAberta
+                  ? "Cancelar"
+                  : "+ Nova categoria"}
+              </button>
+            </div>
+
+            {novaCategoriaAberta && (
+              <div className="mt-6 border border-[#dcd5d0] bg-white p-5">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-2 block text-[9px] uppercase tracking-[0.12em] text-[#81756f]">
+                      Nome
+                    </span>
+
+                    <input
+                      value={novaCategoriaNome}
+                      onChange={(event) =>
+                        setNovaCategoriaNome(
+                          event.target.value
+                        )
+                      }
+                      placeholder="Ex.: Leggings"
+                      className="w-full border border-[#dbd4cf] px-3 py-2.5 text-[12px]"
+                    />
+
+                    <span className="mt-1 block text-[9px] text-[#9b8f88]">
+                      Endereço: /produtos?categoria={gerarSlug(novaCategoriaNome) || "nova-categoria"}
+                    </span>
+                  </label>
+
+                  <label className="block">
+                    <span className="mb-2 block text-[9px] uppercase tracking-[0.12em] text-[#81756f]">
+                      Ordem
+                    </span>
+
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={novaCategoriaOrdem}
+                      onChange={(event) =>
+                        setNovaCategoriaOrdem(
+                          event.target.value.replace(
+                            /\D/g,
+                            ""
+                          )
+                        )
+                      }
+                      className="w-full border border-[#dbd4cf] px-3 py-2.5 text-[12px]"
+                    />
+                  </label>
+
+                  <label className="block md:col-span-2">
+                    <span className="mb-2 block text-[9px] uppercase tracking-[0.12em] text-[#81756f]">
+                      Descrição
+                    </span>
+
+                    <textarea
+                      value={novaCategoriaDescricao}
+                      onChange={(event) =>
+                        setNovaCategoriaDescricao(
+                          event.target.value
+                        )
+                      }
+                      rows={3}
+                      className="w-full resize-none border border-[#dbd4cf] px-3 py-2.5 text-[12px]"
+                    />
+                  </label>
+
+                  <div className="md:col-span-2">
+                    <span className="mb-2 block text-[9px] uppercase tracking-[0.12em] text-[#81756f]">
+                      Imagem
+                    </span>
+
+                    {novaCategoriaImagem && (
+                      <img
+                        src={novaCategoriaImagem}
+                        alt="Nova categoria"
+                        className="mb-3 h-40 w-full object-cover"
+                      />
+                    )}
+
+                    <label className="flex cursor-pointer items-center justify-center border border-[#d8d0cb] bg-[#fbfaf8] px-4 py-3 text-[9px] font-semibold uppercase tracking-[0.12em]">
+                      {enviandoNovaCategoriaImagem
+                        ? "Enviando..."
+                        : novaCategoriaImagem
+                          ? "Trocar imagem"
+                          : "Selecionar imagem"}
+
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={
+                          enviandoNovaCategoriaImagem
+                        }
+                        onChange={
+                          selecionarImagemNovaCategoria
+                        }
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  <label className="flex items-center gap-3 md:col-span-2">
+                    <input
+                      type="checkbox"
+                      checked={novaCategoriaAtiva}
+                      onChange={(event) =>
+                        setNovaCategoriaAtiva(
+                          event.target.checked
+                        )
+                      }
+                    />
+
+                    <span className="text-[11px]">
+                      Categoria ativa no site
+                    </span>
+                  </label>
+                </div>
+
+                <div className="mt-5 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={criarNovaCategoria}
+                    disabled={
+                      salvandoNovaCategoria ||
+                      enviandoNovaCategoriaImagem
+                    }
+                    className="bg-[#c98e76] px-7 py-3 text-[9px] font-semibold uppercase tracking-[0.14em] text-white disabled:opacity-50"
+                  >
+                    {salvandoNovaCategoria
+                      ? "Criando..."
+                      : "Criar categoria"}
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {categorias.map((categoria) => (
@@ -2990,13 +3318,23 @@ export default function AdminPage() {
                       )}
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => salvarCategoria(categoria)}
-                      className="w-full bg-[#c98e76] py-3 text-[9px] font-semibold uppercase tracking-[0.14em] text-white"
-                    >
-                      Salvar categoria
-                    </button>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => salvarCategoria(categoria)}
+                        className="w-full bg-[#c98e76] py-3 text-[9px] font-semibold uppercase tracking-[0.14em] text-white"
+                      >
+                        Salvar categoria
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => excluirCategoria(categoria)}
+                        className="w-full border border-[#c75f4a] bg-white py-3 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#a33f30] transition hover:bg-[#fff1ed]"
+                      >
+                        Excluir categoria
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
